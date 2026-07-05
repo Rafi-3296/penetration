@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>model 1 — messege penetretion</title>
+<style>
+  :root{
+    --bg: #05080a;
+    --green: #35ff9e;
+    --green-dim: #0f4a33;
+    --cyan: #6be7ff;
+    --amber: #ffb454;
+    --ink: #d9fbe9;
+    --panel: rgba(6, 14, 12, 0.72);
+    --line: rgba(53, 255, 158, 0.18);
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: var(--bg);
+    color: var(--ink);
+    height: 100%;
+    overflow-x: hidden;
+  }
+
+  body {
+    font-family: 'JetBrains Mono', 'Fira Code', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+  }
+
+  canvas#rain {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    filter: blur(0.5px);
+    opacity: 0.85;
+  }
+
+  .vignette {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 50% 20%, rgba(5,8,10,0) 0%, rgba(5,8,10,0.35) 55%, rgba(5,8,10,0.75) 100%),
+      linear-gradient(to bottom, rgba(5,8,10,0.2), rgba(5,8,10,0.05) 20%, rgba(5,8,10,0.35) 80%, rgba(5,8,10,0.85) 100%);
+  }
+
+  .scanlines {
+    position: fixed;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+    background: repeating-linear-gradient(
+      to bottom,
+      rgba(0,0,0,0) 0px,
+      rgba(0,0,0,0) 2px,
+      rgba(0,0,0,0.08) 3px,
+      rgba(0,0,0,0) 4px
+    );
+    mix-blend-mode: overlay;
+    opacity: 0.5;
+  }
+
+  main {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    max-width: 860px;
+    padding: 8vh 24px 10vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+    letter-spacing: 0.42em;
+    text-transform: uppercase;
+    color: var(--cyan);
+    opacity: 0.75;
+    margin-bottom: 22px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .eyebrow::before, .eyebrow::after {
+    content: "";
+    width: 28px;
+    height: 1px;
+    background: var(--cyan);
+    opacity: 0.5;
+  }
+
+  h1 {
+    font-size: clamp(28px, 6vw, 58px);
+    font-weight: 700;
+    letter-spacing: 0.01em;
+    line-height: 1.15;
+    margin: 0 0 18px;
+    color: var(--green);
+    text-shadow: 0 0 18px rgba(53,255,158,0.45), 0 0 46px rgba(53,255,158,0.18);
+  }
+
+  h1 .lower {
+    color: var(--ink);
+    text-shadow: none;
+    font-weight: 400;
+    opacity: 0.85;
+  }
+
+  .subtitle {
+    font-size: 14px;
+    letter-spacing: 0.08em;
+    color: var(--amber);
+    opacity: 0.9;
+    margin-bottom: 6px;
+  }
+
+  .subtitle .by {
+    color: var(--ink);
+    opacity: 0.55;
+    font-weight: 400;
+  }
+
+  .status-line {
+    font-size: 12px;
+    color: var(--green-dim);
+    letter-spacing: 0.05em;
+    margin-bottom: 52px;
+  }
+
+  .status-line .dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 8px var(--green);
+    margin-right: 8px;
+    animation: pulse 1.6s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.25; }
+  }
+
+  .terminal {
+    width: 100%;
+    text-align: left;
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    backdrop-filter: blur(6px);
+    box-shadow: 0 0 0 1px rgba(53,255,158,0.04), 0 20px 60px rgba(0,0,0,0.55), inset 0 0 40px rgba(53,255,158,0.03);
+    overflow: hidden;
+  }
+
+  .terminal-bar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 16px;
+    background: rgba(53,255,158,0.05);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .terminal-bar span.dot2 {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    background: #3a3f3d;
+  }
+
+  .terminal-bar .label {
+    margin-left: 10px;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--green);
+    opacity: 0.7;
+    text-transform: uppercase;
+  }
+
+  .terminal-body {
+    padding: 22px 22px 26px;
+    max-height: 56vh;
+    overflow-y: auto;
+    font-size: 13px;
+    line-height: 1.7;
+  }
+
+  .enc-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+    padding: 10px 4px 4px;
+  }
+
+  .enc-btn {
+    flex: 1 1 160px;
+    max-width: 220px;
+    padding: 14px 12px;
+    background: rgba(53,255,158,0.06);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--green);
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .enc-btn::before {
+    content: "🔒";
+    display: block;
+    font-size: 16px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+
+  .enc-btn:hover {
+    background: rgba(53,255,158,0.14);
+    border-color: rgba(53,255,158,0.5);
+    box-shadow: 0 0 20px rgba(53,255,158,0.15);
+    transform: translateY(-2px);
+  }
+
+  .enc-btn.active {
+    background: rgba(53,255,158,0.18);
+    border-color: var(--green);
+    color: var(--ink);
+  }
+
+  .enc-btn.active::before {
+    content: "🔓";
+  }
+
+  .enc-hint {
+    text-align: center;
+    font-size: 11px;
+    color: var(--green-dim);
+    letter-spacing: 0.06em;
+    padding: 18px 0 4px;
+  }
+
+  .terminal-body::-webkit-scrollbar { width: 8px; }
+  .terminal-body::-webkit-scrollbar-track { background: transparent; }
+  .terminal-body::-webkit-scrollbar-thumb { background: var(--green-dim); border-radius: 4px; }
+
+  .frac {
+    margin-bottom: 4px;
+    opacity: 0;
+    animation: reveal 0.4s ease forwards;
+  }
+
+  .frac .key { color: var(--cyan); }
+  .frac .idx { color: var(--amber); }
+  .frac .prop { color: #7fb8ff; opacity: 0.85; }
+  .frac .val-bow { color: var(--green); }
+  .frac .val-you { color: var(--amber); }
+  .frac .str { color: var(--ink); }
+  .frac .punc { color: #4d5f57; }
+
+  @keyframes reveal {
+    from { opacity: 0; transform: translateY(3px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  footer {
+    position: relative;
+    z-index: 3;
+    padding: 0 24px 40px;
+    font-size: 11px;
+    letter-spacing: 0.1em;
+    color: var(--green-dim);
+    text-align: center;
+  }
+
+  @media (max-width: 600px) {
+    .terminal-body { font-size: 12px; padding: 18px; }
+    main { padding-top: 6vh; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status-line .dot { animation: none; }
+    .frac { animation: none; opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="rain"></canvas>
+<div class="vignette"></div>
+<div class="scanlines"></div>
+
+<main>
+  <div class="eyebrow">signal intercepted</div>
+  <h1>model 1 <span class="lower">— messege penetretion</span></h1>
+  <div class="subtitle"><span class="by">made by</span> Rafi</div>
+  <div class="status-line"><span class="dot"></span>decrypting packet stream · 103 fragments recovered</div>
+
+  <div class="terminal">
+    <div class="terminal-bar">
+      <span class="dot2" style="background:#ff5f57;"></span>
+      <span class="dot2" style="background:#febc2e;"></span>
+      <span class="dot2" style="background:#28c840;"></span>
+      <span class="label">packet_log.frac</span>
+    </div>
+    <div class="terminal-body">
+      <div class="enc-buttons">
+        <button class="enc-btn" data-frac="1">Encryption-1</button>
+        <button class="enc-btn" data-frac="2">Encryption-2</button>
+        <button class="enc-btn" data-frac="3">Encryption-3</button>
+      </div>
+      <div class="enc-hint" id="hint">select a fragment to decrypt</div>
+      <div id="log"></div>
+    </div>
+  </div>
+</main>
+
+<footer>:: end of transmission ::</footer>
+
+<script>
+// ---------- Binary rain background ----------
+const canvas = document.getElementById('rain');
+const ctx = canvas.getContext('2d');
+let width, height, columns, drops, fontSize = 16;
+
+function resize() {
+  width = canvas.width = window.innerWidth;
+  height = canvas.height = window.innerHeight;
+  columns = Math.floor(width / fontSize);
+  drops = new Array(columns).fill(0).map(() => Math.random() * -100);
+}
+window.addEventListener('resize', resize);
+resize();
+
+function draw() {
+  ctx.fillStyle = 'rgba(5, 8, 10, 0.10)';
+  ctx.fillRect(0, 0, width, height);
+
+  ctx.font = fontSize + 'px monospace';
+
+  for (let i = 0; i < columns; i++) {
+    const char = Math.random() > 0.5 ? '1' : '0';
+    const x = i * fontSize;
+    const y = drops[i] * fontSize;
+
+    const brightness = Math.random();
+    if (brightness > 0.95) {
+      ctx.fillStyle = 'rgba(200, 255, 230, 1)';
+    } else if (brightness > 0.8) {
+      ctx.fillStyle = 'rgba(53, 255, 158, 0.9)';
+    } else {
+      ctx.fillStyle = 'rgba(30, 160, 105, 0.75)';
+    }
+
+    ctx.fillText(char, x, y);
+
+    if (y > height && Math.random() > 0.975) {
+      drops[i] = 0;
+    }
+    drops[i] += 0.6 + Math.random() * 0.4;
+  }
+  requestAnimationFrame(draw);
+}
+draw();
+
+// ---------- Packet fragments (3 encryption groups) ----------
+const fragments = {
+  1: [
+    ["036","0xBOW","Yeappp!!! Biyee koree sbbyy kee dekhay..."],
+    ["037","0xYOU","Tatahhh 🤍"],
+    ["038","0xYOU","Tumio namaz pore niyo tataaah"],
+    ["039","0xBOW","Aaaaaaaa tmi bolle nh pore kmne thakii 🫂🙌"],
+    ["040","0xBOW","Bebbiiii😭💋"],
+    ["041","0xBOW","Awwwwhhh jaan bacchaa amrr mmuuwwaahhh😭💋"],
+    ["042","0xYOU","Onekk miss krteciiii tmk 😭"],
+    ["043","0xYOU","More jaye vut hye trpr Jai oke??"],
+    ["044","0xYOU","Taile Valo hbe🥺"],
+    ["045","0xBOW","Latthiiiiiiiiiiiii"],
+    ["046","0xBOW","Kuttaaaaaaaaaa"],
+    ["047","0xBOW","Thappoorrrr khabiiiiii!!!"],
+    ["048","0xYOU","Sara din tmk voy dekhaboo😭"],
+    ["049","0xBOW","Dekhaa krte hbe na eksathe more koborei shuiye pori cholooo!"],
+    ["050","0xYOU","Dekso tmr sathe Kotha bole modd thik hye gelo 😭"],
+    ["051","0xBOW","Awwwwhhh baccha amrr mmuuwwaahhh😭💋"],
+    ["052","0xYOU","Tmi amr medicine fr"],
+    ["053","0xBOW","Awwhh baby girl asho kissy deii ektaa"],
+    ["054","0xYOU","Koi jbo bolooo 😭🤌"],
+    ["055","0xBOW","Amr basay ashooo😭💋"],
+    ["056","0xYOU","I lovee u 🫂"],
+    ["057","0xBOW","I lovee youu moreee 💋"],
+    ["058","0xYOU","Dekso tmr sathe Kotha bole modd thik hye gelo 😭"],
+    ["059","0xBOW","Mmuuwwaah thankuuuu"],
+    ["060","0xYOU","Val lagteche nh hothat kre"],
+    ["061","0xBOW","Call to dite parba nh voice toh dew😭😭"],
+    ["062","0xBOW","Daraww ammu jakk"],
+    ["063","0xBOW","Btw wait kono I'd theke msg dile blk marba direct"],
+    ["064","0xYOU","Ik bby"],
+    ["065","0xYOU","Jst kidding"],
+    ["066","0xBOW","Kuttaaa vaggg 😒🔪"],
+    ["067","0xYOU","Awwwww koto sundor kre boleeen"],
+    ["068","0xYOU","Aaawwww, 🥰"],
+    ["069","0xBOW","Huuhhhh!"],
+    ["070","0xYOU","Kemon jni lage"],
+    ["071","0xBOW","Aaaaaa😭🫂"],
+    ["072","0xBOW","Gulumulu bacchaa amrr"],
+    ["073","0xBOW","Pvt shesss??"],
+    ["074","0xYOU","Kbee shes 😭"],
+    ["075","0xBOW","Btw wait ami oi I'd te ektaa i'd share dibo oita report maree diba justt"],
+    ["076","0xYOU","Ektu online hou nhh 😭"],
+    ["077","0xYOU","Ekbar I loveee u bole dew😭"],
+    ["078","0xBOW","Awwwhhh bacchaa amrr"],
+    ["079","0xBOW","Extremely sorrryyy 😭"],
+    ["080","0xBOW","I lovee youu soo much jaan bacccchaa amrr 😭"],
+    ["081","0xYOU","Sir gese?"],
+    ["082","0xBOW","Haeee keboll geloo"],
+    ["083","0xYOU","Sabaaa valo lagteche nhhh amrrr"],
+    ["084","0xYOU","Ektu Kotha bolo amr Sathe😭😭😭"],
+    ["085","0xYOU","I loveeee uuu Sabaa 😭😭😭"]
+  ],
+  2: [
+    ["036","0xBOW","Yeappp!!! Biyee koree sbbyy kee dekhay..."],
+    ["037","0xYOU","Tatahhh 🤍"],
+    ["038","0xYOU","Tumio namaz pore niyo tataaah"],
+    ["039","0xBOW","Aaaaaaaa tmi bolle nh pore kmne thakii 🫂🙌"],
+    ["040","0xBOW","Bebbiiii😭💋"],
+    ["041","0xYOU","Onekk miss krteciiii tmk 😭"],
+    ["042","0xYOU","More jaye vut hye trpr Jai oke??"],
+    ["043","0xYOU","Taile Valo hbe🥺"],
+    ["044","0xBOW","Latthiiiiiiiiiiiii"],
+    ["045","0xBOW","Kuttaaaaaaaaaa"],
+    ["046","0xBOW","Thappoorrrr khabiiiiii!!!"],
+    ["047","0xYOU","Sara din tmk voy dekhaboo😭"],
+    ["048","0xBOW","Dekhaa krte hbe na eksathe more koborei shuiye pori cholooo!"],
+    ["049","0xYOU","Dekso tmr sathe Kotha bole modd thik hye gelo 😭"],
+    ["050","0xBOW","Awwwwhhh baccha amrr mmuuwwaahhh😭💋"],
+    ["051","0xYOU","Tmi amr medicine fr"],
+    ["052","0xBOW","Awwhh baby girl asho kissy deii ektaa"],
+    ["053","0xYOU","Koi jbo bolooo 😭🤌"],
+    ["054","0xBOW","Amr basay ashooo😭💋"],
+    ["055","0xYOU","I lovee u 🫂"],
+    ["056","0xBOW","I lovee youu moreee 💋"],
+    ["057","0xBOW","Mmuuwwaah thankuuuu"],
+    ["058","0xYOU","Val lagteche nh hothat kre"],
+    ["059","0xBOW","Call to dite parba nh voice toh dew😭😭"],
+    ["060","0xBOW","Daraww ammu jakk"],
+    ["061","0xBOW","Btw wait kono I'd theke msg dile blk marba direct"],
+    ["062","0xYOU","Ik bby"],
+    ["063","0xYOU","Jst kidding"],
+    ["064","0xBOW","Kuttaaa vaggg 😒🔪"],
+    ["065","0xYOU","Awwwww koto sundor kre boleeen"],
+    ["066","0xYOU","Aaawwww, 🥰"],
+    ["067","0xBOW","Huuhhhh!"],
+    ["068","0xYOU","Kemon jni lage"],
+    ["069","0xBOW","Aaaaaa😭🫂"],
+    ["070","0xBOW","Gulumulu bacchaa amrr"],
+    ["071","0xBOW","Pvt shesss??"],
+    ["072","0xYOU","Kbee shes 😭"],
+    ["073","0xBOW","Btw wait ami oi I'd te ektaa i'd share dibo oita report maree diba justt"],
+    ["074","0xYOU","Ektu online hou nhh 😭"],
+    ["075","0xYOU","Ekbar I loveee u bole dew😭"],
+    ["076","0xBOW","Awwwhhh bacchaa amrr"],
+    ["077","0xBOW","Extremely sorrryyy 😭"],
+    ["078","0xBOW","I lovee youu soo much jaan bacccchaa amrr 😭"],
+    ["079","0xYOU","Sir gese?"],
+    ["080","0xBOW","Haeee keboll geloo"],
+    ["081","0xYOU","Sabaaa valo lagteche nhhh amrrr"],
+    ["082","0xYOU","Ektu Kotha bolo amr Sathe😭😭😭"],
+    ["083","0xYOU","I loveeee uuu Sabaa 😭😭😭"]
+  ],
+  3: [
+    ["084","0xBOW","Hyy naaa ammu bujhe jayy🙂🫶"],
+    ["085","0xBOW","Btw"],
+    ["086","0xBOW","Ami namaz porboo"],
+    ["087","0xBOW","Gosol e jbo ekhnn"],
+    ["088","0xBOW","Poree kothaa hbee okkiiee!!"],
+    ["089","0xBOW","Ashi ekhnn"],
+    ["090","0xBOW","I loveee youu soo muchhh"],
+    ["091","0xBOW","Tataaahh"],
+    ["092","0xBOW","Mmuuuwwwaahhh"],
+    ["093","0xYOU","Okeee"],
+    ["094","0xBOW","Tumio namaz pore niyo tataaah"],
+    ["095","0xYOU","Aaaaaaaa tmi bolle nh pore kmne thakii 🫂🙌"],
+    ["096","0xBOW","Bebbiiii😭💋"],
+    ["097","0xBOW","Awwwwhhh jaan bacchaa amrr mmuwwaahhh😭💋"],
+    ["098","0xYOU","Onekk miss krteciiii tmk😭"],
+    ["099","0xBOW","But ami bollee ammu taww amr pashei boshe thake eijonnoi hy na🙂🫶"],
+    ["100","0xYOU","Amk tui kre bolba"],
+    ["101","0xBOW","Yeappp!!! Biyee koree sbbyy kee dekhay..."],
+    ["102","0xYOU","I loveee u moree"],
+    ["103","0xYOU","Tatahhh 🤍"]
+  ]
+};
+
+const log = document.getElementById('log');
+const hint = document.getElementById('hint');
+const buttons = document.querySelectorAll('.enc-btn');
+
+function renderFragment(num) {
+  log.innerHTML = '';
+  const packets = fragments[num];
+  packets.forEach((p, i) => {
+    const [idx, sender, msg] = p;
+    const senderClass = sender === '0xBOW' ? 'val-bow' : 'val-you';
+    const div = document.createElement('div');
+    div.className = 'frac';
+    div.style.animationDelay = (i * 0.05) + 's';
+    div.innerHTML =
+      `<span class="key">frac</span><span class="punc">///;;</span><span class="idx">${idx}</span> <span class="punc">=></span> <span class="punc">{</span><br>` +
+      `&nbsp;&nbsp;&nbsp;&nbsp;<span class="prop">sender</span> <span class="punc">:</span> <span class="${senderClass}">${sender}</span><span class="punc">;</span><br>` +
+      `&nbsp;&nbsp;&nbsp;&nbsp;<span class="prop">packet</span> <span class="punc">:</span> <span class="str">"${msg}"</span><span class="punc">;</span><br>` +
+      `<span class="punc">};</span>`;
+    log.appendChild(div);
+  });
+}
+
+buttons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const num = btn.getAttribute('data-frac');
+    hint.textContent = `fragment ${num} decrypted · ${fragments[num].length} packets`;
+    renderFragment(num);
+  });
+});
+</script>
+
+</body>
+</html>
