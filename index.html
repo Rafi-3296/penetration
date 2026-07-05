@@ -203,6 +203,65 @@
     line-height: 1.7;
   }
 
+  .enc-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 14px;
+    justify-content: center;
+    padding: 10px 4px 4px;
+  }
+
+  .enc-btn {
+    flex: 1 1 160px;
+    max-width: 220px;
+    padding: 14px 12px;
+    background: rgba(53,255,158,0.06);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--green);
+    font-family: inherit;
+    font-size: 12px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .enc-btn::before {
+    content: "🔒";
+    display: block;
+    font-size: 16px;
+    margin-bottom: 6px;
+    opacity: 0.8;
+  }
+
+  .enc-btn:hover {
+    background: rgba(53,255,158,0.14);
+    border-color: rgba(53,255,158,0.5);
+    box-shadow: 0 0 20px rgba(53,255,158,0.15);
+    transform: translateY(-2px);
+  }
+
+  .enc-btn.active {
+    background: rgba(53,255,158,0.18);
+    border-color: var(--green);
+    color: var(--ink);
+  }
+
+  .enc-btn.active::before {
+    content: "🔓";
+  }
+
+  .enc-hint {
+    text-align: center;
+    font-size: 11px;
+    color: var(--green-dim);
+    letter-spacing: 0.06em;
+    padding: 18px 0 4px;
+  }
+
   .terminal-body::-webkit-scrollbar { width: 8px; }
   .terminal-body::-webkit-scrollbar-track { background: transparent; }
   .terminal-body::-webkit-scrollbar-thumb { background: var(--green-dim); border-radius: 4px; }
@@ -266,7 +325,15 @@
       <span class="dot2" style="background:#28c840;"></span>
       <span class="label">packet_log.frac</span>
     </div>
-    <div class="terminal-body" id="log"></div>
+    <div class="terminal-body">
+      <div class="enc-buttons">
+        <button class="enc-btn" data-frac="1">Encryption-1</button>
+        <button class="enc-btn" data-frac="2">Encryption-2</button>
+        <button class="enc-btn" data-frac="3">Encryption-3</button>
+      </div>
+      <div class="enc-hint" id="hint">select a fragment to decrypt</div>
+      <div id="log"></div>
+    </div>
   </div>
 </main>
 
@@ -318,43 +385,164 @@ function draw() {
 }
 draw();
 
-// ---------- Packet log ----------
-const packets = [
-  ["084","0xBOW","Hyy naaa ammu bujhe jayy🙂🫶"],
-  ["085","0xBOW","Btw"],
-  ["086","0xBOW","Ami namaz porboo"],
-  ["087","0xBOW","Gosol e jbo ekhnn"],
-  ["088","0xBOW","Poree kothaa hbee okkiiee!!"],
-  ["089","0xBOW","Ashi ekhnn"],
-  ["090","0xBOW","I loveee youu soo muchhh"],
-  ["091","0xBOW","Tataaahh"],
-  ["092","0xBOW","Mmuuuwwwaahhh"],
-  ["093","0xYOU","Okeee"],
-  ["094","0xBOW","Tumio namaz pore niyo tataaah"],
-  ["095","0xYOU","Aaaaaaaa tmi bolle nh pore kmne thakii 🫂🙌"],
-  ["096","0xBOW","Bebbiiii😭💋"],
-  ["097","0xBOW","Awwwwhhh jaan bacchaa amrr mmuwwaahhh😭💋"],
-  ["098","0xYOU","Onekk miss krteciiii tmk😭"],
-  ["099","0xBOW","But ami bollee ammu taww amr pashei boshe thake eijonnoi hy na🙂🫶"],
-  ["100","0xYOU","Amk tui kre bolba"],
-  ["101","0xBOW","Yeappp!!! Biyee koree sbbyy kee dekhay..."],
-  ["102","0xYOU","I loveee u moree"],
-  ["103","0xYOU","Tatahhh 🤍"]
-];
+// ---------- Packet fragments (3 encryption groups) ----------
+const fragments = {
+  1: [
+    ["036","0xBOW","Yeappp!!! Biyee koree sbbyy kee dekhay..."],
+    ["037","0xYOU","Tatahhh 🤍"],
+    ["038","0xYOU","Tumio namaz pore niyo tataaah"],
+    ["039","0xBOW","Aaaaaaaa tmi bolle nh pore kmne thakii 🫂🙌"],
+    ["040","0xBOW","Bebbiiii😭💋"],
+    ["041","0xBOW","Awwwwhhh jaan bacchaa amrr mmuuwwaahhh😭💋"],
+    ["042","0xYOU","Onekk miss krteciiii tmk 😭"],
+    ["043","0xYOU","More jaye vut hye trpr Jai oke??"],
+    ["044","0xYOU","Taile Valo hbe🥺"],
+    ["045","0xBOW","Latthiiiiiiiiiiiii"],
+    ["046","0xBOW","Kuttaaaaaaaaaa"],
+    ["047","0xBOW","Thappoorrrr khabiiiiii!!!"],
+    ["048","0xYOU","Sara din tmk voy dekhaboo😭"],
+    ["049","0xBOW","Dekhaa krte hbe na eksathe more koborei shuiye pori cholooo!"],
+    ["050","0xYOU","Dekso tmr sathe Kotha bole modd thik hye gelo 😭"],
+    ["051","0xBOW","Awwwwhhh baccha amrr mmuuwwaahhh😭💋"],
+    ["052","0xYOU","Tmi amr medicine fr"],
+    ["053","0xBOW","Awwhh baby girl asho kissy deii ektaa"],
+    ["054","0xYOU","Koi jbo bolooo 😭🤌"],
+    ["055","0xBOW","Amr basay ashooo😭💋"],
+    ["056","0xYOU","I lovee u 🫂"],
+    ["057","0xBOW","I lovee youu moreee 💋"],
+    ["058","0xYOU","Dekso tmr sathe Kotha bole modd thik hye gelo 😭"],
+    ["059","0xBOW","Mmuuwwaah thankuuuu"],
+    ["060","0xYOU","Val lagteche nh hothat kre"],
+    ["061","0xBOW","Call to dite parba nh voice toh dew😭😭"],
+    ["062","0xBOW","Daraww ammu jakk"],
+    ["063","0xBOW","Btw wait kono I'd theke msg dile blk marba direct"],
+    ["064","0xYOU","Ik bby"],
+    ["065","0xYOU","Jst kidding"],
+    ["066","0xBOW","Kuttaaa vaggg 😒🔪"],
+    ["067","0xYOU","Awwwww koto sundor kre boleeen"],
+    ["068","0xYOU","Aaawwww, 🥰"],
+    ["069","0xBOW","Huuhhhh!"],
+    ["070","0xYOU","Kemon jni lage"],
+    ["071","0xBOW","Aaaaaa😭🫂"],
+    ["072","0xBOW","Gulumulu bacchaa amrr"],
+    ["073","0xBOW","Pvt shesss??"],
+    ["074","0xYOU","Kbee shes 😭"],
+    ["075","0xBOW","Btw wait ami oi I'd te ektaa i'd share dibo oita report maree diba justt"],
+    ["076","0xYOU","Ektu online hou nhh 😭"],
+    ["077","0xYOU","Ekbar I loveee u bole dew😭"],
+    ["078","0xBOW","Awwwhhh bacchaa amrr"],
+    ["079","0xBOW","Extremely sorrryyy 😭"],
+    ["080","0xBOW","I lovee youu soo much jaan bacccchaa amrr 😭"],
+    ["081","0xYOU","Sir gese?"],
+    ["082","0xBOW","Haeee keboll geloo"],
+    ["083","0xYOU","Sabaaa valo lagteche nhhh amrrr"],
+    ["084","0xYOU","Ektu Kotha bolo amr Sathe😭😭😭"],
+    ["085","0xYOU","I loveeee uuu Sabaa 😭😭😭"]
+  ],
+  2: [
+    ["036","0xBOW","Yeappp!!! Biyee koree sbbyy kee dekhay..."],
+    ["037","0xYOU","Tatahhh 🤍"],
+    ["038","0xYOU","Tumio namaz pore niyo tataaah"],
+    ["039","0xBOW","Aaaaaaaa tmi bolle nh pore kmne thakii 🫂🙌"],
+    ["040","0xBOW","Bebbiiii😭💋"],
+    ["041","0xYOU","Onekk miss krteciiii tmk 😭"],
+    ["042","0xYOU","More jaye vut hye trpr Jai oke??"],
+    ["043","0xYOU","Taile Valo hbe🥺"],
+    ["044","0xBOW","Latthiiiiiiiiiiiii"],
+    ["045","0xBOW","Kuttaaaaaaaaaa"],
+    ["046","0xBOW","Thappoorrrr khabiiiiii!!!"],
+    ["047","0xYOU","Sara din tmk voy dekhaboo😭"],
+    ["048","0xBOW","Dekhaa krte hbe na eksathe more koborei shuiye pori cholooo!"],
+    ["049","0xYOU","Dekso tmr sathe Kotha bole modd thik hye gelo 😭"],
+    ["050","0xBOW","Awwwwhhh baccha amrr mmuuwwaahhh😭💋"],
+    ["051","0xYOU","Tmi amr medicine fr"],
+    ["052","0xBOW","Awwhh baby girl asho kissy deii ektaa"],
+    ["053","0xYOU","Koi jbo bolooo 😭🤌"],
+    ["054","0xBOW","Amr basay ashooo😭💋"],
+    ["055","0xYOU","I lovee u 🫂"],
+    ["056","0xBOW","I lovee youu moreee 💋"],
+    ["057","0xBOW","Mmuuwwaah thankuuuu"],
+    ["058","0xYOU","Val lagteche nh hothat kre"],
+    ["059","0xBOW","Call to dite parba nh voice toh dew😭😭"],
+    ["060","0xBOW","Daraww ammu jakk"],
+    ["061","0xBOW","Btw wait kono I'd theke msg dile blk marba direct"],
+    ["062","0xYOU","Ik bby"],
+    ["063","0xYOU","Jst kidding"],
+    ["064","0xBOW","Kuttaaa vaggg 😒🔪"],
+    ["065","0xYOU","Awwwww koto sundor kre boleeen"],
+    ["066","0xYOU","Aaawwww, 🥰"],
+    ["067","0xBOW","Huuhhhh!"],
+    ["068","0xYOU","Kemon jni lage"],
+    ["069","0xBOW","Aaaaaa😭🫂"],
+    ["070","0xBOW","Gulumulu bacchaa amrr"],
+    ["071","0xBOW","Pvt shesss??"],
+    ["072","0xYOU","Kbee shes 😭"],
+    ["073","0xBOW","Btw wait ami oi I'd te ektaa i'd share dibo oita report maree diba justt"],
+    ["074","0xYOU","Ektu online hou nhh 😭"],
+    ["075","0xYOU","Ekbar I loveee u bole dew😭"],
+    ["076","0xBOW","Awwwhhh bacchaa amrr"],
+    ["077","0xBOW","Extremely sorrryyy 😭"],
+    ["078","0xBOW","I lovee youu soo much jaan bacccchaa amrr 😭"],
+    ["079","0xYOU","Sir gese?"],
+    ["080","0xBOW","Haeee keboll geloo"],
+    ["081","0xYOU","Sabaaa valo lagteche nhhh amrrr"],
+    ["082","0xYOU","Ektu Kotha bolo amr Sathe😭😭😭"],
+    ["083","0xYOU","I loveeee uuu Sabaa 😭😭😭"]
+  ],
+  3: [
+    ["084","0xBOW","Hyy naaa ammu bujhe jayy🙂🫶"],
+    ["085","0xBOW","Btw"],
+    ["086","0xBOW","Ami namaz porboo"],
+    ["087","0xBOW","Gosol e jbo ekhnn"],
+    ["088","0xBOW","Poree kothaa hbee okkiiee!!"],
+    ["089","0xBOW","Ashi ekhnn"],
+    ["090","0xBOW","I loveee youu soo muchhh"],
+    ["091","0xBOW","Tataaahh"],
+    ["092","0xBOW","Mmuuuwwwaahhh"],
+    ["093","0xYOU","Okeee"],
+    ["094","0xBOW","Tumio namaz pore niyo tataaah"],
+    ["095","0xYOU","Aaaaaaaa tmi bolle nh pore kmne thakii 🫂🙌"],
+    ["096","0xBOW","Bebbiiii😭💋"],
+    ["097","0xBOW","Awwwwhhh jaan bacchaa amrr mmuwwaahhh😭💋"],
+    ["098","0xYOU","Onekk miss krteciiii tmk😭"],
+    ["099","0xBOW","But ami bollee ammu taww amr pashei boshe thake eijonnoi hy na🙂🫶"],
+    ["100","0xYOU","Amk tui kre bolba"],
+    ["101","0xBOW","Yeappp!!! Biyee koree sbbyy kee dekhay..."],
+    ["102","0xYOU","I loveee u moree"],
+    ["103","0xYOU","Tatahhh 🤍"]
+  ]
+};
 
 const log = document.getElementById('log');
-packets.forEach((p, i) => {
-  const [idx, sender, msg] = p;
-  const senderClass = sender === '0xBOW' ? 'val-bow' : 'val-you';
-  const div = document.createElement('div');
-  div.className = 'frac';
-  div.style.animationDelay = (i * 0.06) + 's';
-  div.innerHTML =
-    `<span class="key">frac</span><span class="punc">///;;</span><span class="idx">${idx}</span> <span class="punc">=></span> <span class="punc">{</span><br>` +
-    `&nbsp;&nbsp;&nbsp;&nbsp;<span class="prop">sender</span> <span class="punc">:</span> <span class="${senderClass}">${sender}</span><span class="punc">;</span><br>` +
-    `&nbsp;&nbsp;&nbsp;&nbsp;<span class="prop">packet</span> <span class="punc">:</span> <span class="str">"${msg}"</span><span class="punc">;</span><br>` +
-    `<span class="punc">};</span>`;
-  log.appendChild(div);
+const hint = document.getElementById('hint');
+const buttons = document.querySelectorAll('.enc-btn');
+
+function renderFragment(num) {
+  log.innerHTML = '';
+  const packets = fragments[num];
+  packets.forEach((p, i) => {
+    const [idx, sender, msg] = p;
+    const senderClass = sender === '0xBOW' ? 'val-bow' : 'val-you';
+    const div = document.createElement('div');
+    div.className = 'frac';
+    div.style.animationDelay = (i * 0.05) + 's';
+    div.innerHTML =
+      `<span class="key">frac</span><span class="punc">///;;</span><span class="idx">${idx}</span> <span class="punc">=></span> <span class="punc">{</span><br>` +
+      `&nbsp;&nbsp;&nbsp;&nbsp;<span class="prop">sender</span> <span class="punc">:</span> <span class="${senderClass}">${sender}</span><span class="punc">;</span><br>` +
+      `&nbsp;&nbsp;&nbsp;&nbsp;<span class="prop">packet</span> <span class="punc">:</span> <span class="str">"${msg}"</span><span class="punc">;</span><br>` +
+      `<span class="punc">};</span>`;
+    log.appendChild(div);
+  });
+}
+
+buttons.forEach(btn => {
+  btn.addEventListener('click', () => {
+    buttons.forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    const num = btn.getAttribute('data-frac');
+    hint.textContent = `fragment ${num} decrypted · ${fragments[num].length} packets`;
+    renderFragment(num);
+  });
 });
 </script>
 
